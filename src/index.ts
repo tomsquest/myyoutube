@@ -3,8 +3,8 @@ import axios from "axios";
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
 
-type Response = {
-  items: Video[];
+type SearchListResponse = {
+  items: SearchResultResponse[];
   nextPageToken?: string;
   pageInfo: {
     totalResults: number;
@@ -12,7 +12,7 @@ type Response = {
   };
 };
 
-type Video = {
+type SearchResultResponse = {
   id: {
     kind: string;
     videoId: string;
@@ -22,10 +22,22 @@ type Video = {
     title: string;
     description: string;
     publishedAt: string;
+    channelId: string;
+    channelTitle: string;
   };
+  rating: "like" | "dislike" | "none" | "unspecified";
 };
 
-async function* getChannelVideos(pageToken?: string): AsyncGenerator<Video[]> {
+type VideoGetRatingResponse = {
+  items: {
+    videoId: string;
+    rating: "like" | "dislike" | "none" | "unspecified";
+  }[];
+};
+
+async function* getChannelVideos(
+  pageToken?: string,
+): AsyncGenerator<SearchResultResponse[]> {
   const maxResults = 50; // max is 50
 
   // Doc: https://developers.google.com/youtube/v3/docs/search/list
@@ -35,8 +47,20 @@ async function* getChannelVideos(pageToken?: string): AsyncGenerator<Video[]> {
     url += `&pageToken=${pageToken}`;
   }
 
-  const { data } = await axios.get<Response>(url);
+  const { data } = await axios.get<SearchListResponse>(url);
   const videos = data.items;
+
+  // Get rating for each video in bulk
+  const videoIds = videos.map((video) => video.id.videoId).join(",");
+  const ratingResponse = await axios.get<VideoGetRatingResponse>(
+    `https://www.googleapis.com/youtube/v3/videos/getRating?key=${API_KEY}&id=${videoIds}`,
+  );
+  for (const item of ratingResponse.data.items) {
+    const video = videos.find((video) => video.id.videoId === item.videoId);
+    if (video) {
+      video.rating = item.rating;
+    }
+  }
 
   yield videos;
 
@@ -54,9 +78,11 @@ async function* getChannelVideos(pageToken?: string): AsyncGenerator<Video[]> {
       console.log(
         `[${String(index).padStart(4)}] ${video.id.kind} ${
           video.snippet.publishedAt
-        } ${video.snippet.title}, ID: ${video.id.videoId}`,
-        index++,
+        } ${video.snippet.title}, ID: ${video.id.videoId} Rating: ${
+          video.rating
+        }`,
       );
+      index++;
     });
   }
 })();
