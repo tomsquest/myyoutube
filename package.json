@@ -3,12 +3,14 @@
   "module": "src/index.ts",
   "type": "module",
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "rimraf": "^5.0.5"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "scripts": {
+    "clean": "rimraf dist",
     "start": "bun run src/index.ts",
     "build": "bun build ./src/index.ts --compile --outfile dist/myyoutube"
   }
