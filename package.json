@@ -13,5 +13,8 @@
     "clean": "rimraf dist",
     "start": "bun run src/index.ts",
     "build": "bun build ./src/index.ts --compile --outfile dist/myyoutube"
+  },
+  "dependencies": {
+    "axios": "^1.6.2"
   }
 }
