@@ -2,6 +2,9 @@
   "name": "myyoutube",
   "module": "src/index.ts",
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "clean": "rimraf dist",
     "start": "bun run src/index.ts",
